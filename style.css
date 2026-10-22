@@ -4688,3 +4688,143 @@ body[data-sarathi-view="dashboard"]::before {
   background-repeat: no-repeat !important;
   filter: saturate(.88) contrast(.98) !important;
 }
+
+/* Menu-aware Swasthya serving guidance */
+.menu-portion-list{margin-top:1rem}.menu-portion-list h4{margin:.25rem 0 .65rem;font-size:1rem}.menu-portion-list ul,.menu-nutrition-targets ul{padding-left:1.2rem;margin:.4rem 0}.menu-portion-list li{margin:.65rem 0;line-height:1.45}.menu-portion-list li span{display:block;color:var(--muted,#667085);font-size:.94rem;margin-top:.15rem}.menu-nutrition-targets{margin-top:1rem;padding:1rem;border:1px solid var(--line,rgba(120,120,120,.25));border-radius:12px}.menu-nutrition-targets li{margin:.4rem 0}.menu-nutrition-targets .small-copy{display:block;margin-top:.6rem}
+
+
+/* SARATHI 1.9.0 — contrast/accessibility correction for Ekagra timer and workspace dropdowns.
+   Keep this patch at the end of style.css so it overrides earlier legacy theme rules. */
+:root {
+  --sr-primary: #244b37;
+  --sr-primary-hover: #183a29;
+  --sr-gold: #c89535;
+  --sr-cream: #fbf6e9;
+  --sr-ink: #242820;
+  --sr-muted-ink: #50584f;
+  --sr-border: #d7b873;
+}
+
+/* Ekagra: use a light, mostly opaque glass panel so the countdown is readable
+   regardless of the clock/stone background image behind it. */
+#view-ekagra .ekagra-timer-panel,
+.workspace-view.ekagra-view .ekagra-timer-panel {
+  background: rgba(250, 247, 237, .94) !important;
+  color: #20291f !important;
+  border: 1px solid #d5ad58 !important;
+  box-shadow: 0 16px 44px rgba(18, 26, 18, .24), inset 0 1px 0 rgba(255,255,255,.9) !important;
+  backdrop-filter: blur(12px) saturate(1.05) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.05) !important;
+}
+#view-ekagra .ekagra-clock,
+.workspace-view.ekagra-view .ekagra-clock {
+  color: #214c35 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+  font-weight: 750 !important;
+  letter-spacing: .045em !important;
+}
+#view-ekagra .ekagra-duration,
+#view-ekagra .ekagra-status,
+#view-ekagra .workspace-title h1,
+#view-ekagra .workspace-title p,
+#view-ekagra .eyebrow,
+.workspace-view.ekagra-view .ekagra-duration,
+.workspace-view.ekagra-view .ekagra-status {
+  color: #344538 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+#view-ekagra .ekagra-duration input,
+#view-ekagra input,
+#view-ekagra select,
+#view-ekagra textarea {
+  color: #242820 !important;
+  background: #fffdf7 !important;
+  border: 1px solid #b8a16d !important;
+}
+#view-ekagra .button-primary,
+#view-ekagra button.button-primary {
+  background: #244b37 !important;
+  color: #ffffff !important;
+  border: 1px solid #244b37 !important;
+  text-shadow: none !important;
+}
+#view-ekagra .button-quiet,
+#view-ekagra button.button-quiet {
+  background: #f7edcf !important;
+  color: #24412f !important;
+  border: 1px solid #c9a85d !important;
+  text-shadow: none !important;
+}
+#view-ekagra button:disabled {
+  color: #5b6259 !important;
+  background: #e8e4d8 !important;
+  border-color: #c8c2b4 !important;
+  opacity: .85 !important;
+}
+
+/* All workspace form controls: light surfaces and dark text. */
+.workspace-view input,
+.workspace-view select,
+.workspace-view textarea,
+.workspace-view .menu-controls select,
+.workspace-view .menu-controls input {
+  color: #242820 !important;
+  background-color: #fffdf7 !important;
+  border-color: #c5a45c !important;
+  caret-color: #244b37 !important;
+}
+.workspace-view input::placeholder,
+.workspace-view textarea::placeholder {
+  color: #666b61 !important;
+  opacity: 1 !important;
+}
+/* Native select popups were forced to dark brown by earlier theme rules. */
+.workspace-view select option,
+.workspace-view option,
+.workspace-view optgroup,
+select option,
+select optgroup {
+  color: #242820 !important;
+  background-color: #fffdf7 !important;
+}
+.workspace-view select option:checked,
+.workspace-view option:checked {
+  color: #ffffff !important;
+  background-color: #244b37 !important;
+}
+.workspace-view select:focus,
+.workspace-view input:focus,
+.workspace-view textarea:focus {
+  outline: 2px solid #b98a2f !important;
+  outline-offset: 1px !important;
+  box-shadow: 0 0 0 3px rgba(201, 163, 77, .2) !important;
+}
+
+/* Morning (Aarambha) and other workspace dropdowns: prevent pale text on dark
+   option menus and ensure the selected value is readable too. */
+#view-morning select,
+#view-morning select option,
+#view-evening select,
+#view-evening select option,
+#view-health select,
+#view-health select option,
+#view-sleep select,
+#view-sleep select option,
+#view-jala select,
+#view-jala select option,
+#view-dashboard select,
+#view-dashboard select option {
+  color: #242820 !important;
+  background-color: #fffdf7 !important;
+}
+#view-morning select option:checked,
+#view-evening select option:checked,
+#view-health select option:checked,
+#view-sleep select option:checked,
+#view-jala select option:checked,
+#view-dashboard select option:checked {
+  color: #ffffff !important;
+  background-color: #244b37 !important;
+}

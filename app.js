@@ -661,19 +661,34 @@
     const weekday=dt.toLocaleDateString('en-US',{weekday:'long'}),messType=$('menu-type')?.value||m.type||'veg',mealKey=$('menu-meal-select')?.value||'breakfast',structured=getStructuredDay(m,date,messType);
     const labels={breakfast:'Breakfast',lunch:'Lunch',snacks:'Snacks',dinner:'Dinner'};
     const mealTitle=labels[mealKey]||'Breakfast';
-    const portionFor=meal=>{
-      if(meal==='breakfast')return 'Choose one main breakfast item (for example, idli/dosa/poha if listed) and one protein-rich accompaniment such as dal, sprouts, paneer, egg or milk when available. Start with one standard serving; avoid taking several fried items together.';
-      if(meal==='lunch'||meal==='dinner')return 'Use a balanced plate where available: about ½ vegetables/salad, ¼ rice/roti or another grain, and ¼ dal/legumes/paneer or the selected non-vegetarian protein. A practical starting amount is about 1 cup cooked rice OR 1–2 medium rotis, with 1 small bowl (150–200 ml) dal/legumes and vegetables. The uploaded menu specifies cooked chicken at 150 g (180 g Sundays), fish at 120 g and paneer at 75 g when those items are served; follow the mess serving and adjust to your needs.';
-      return 'Choose one snack serving at a time. If fruit is listed, one small bowl is a practical choice. If choosing fried or sweet snacks, keep to one standard piece/serving rather than combining several extras.';
+    // Practical starting portions for generally healthy adults. These are not
+    // individualized prescriptions: energy needs vary with body size, age, activity,
+    // pregnancy/lactation, health conditions and clinician advice.
+    const portionForItem=(item, meal)=>{
+      const x=String(item).toLowerCase();
+      if(/(fruit|banana|apple|orange|papaya|watermelon|guava|grapes|seasonal)/i.test(x)) return '1 medium fruit or about 1 small bowl (100–150 g); fruit contributes to the WHO daily fruit-and-vegetable goal.';
+      if(/(salad|vegetable|veg curry|vegetable curry|greens|spinach|carrot|beans|cabbage|gourd|bhindi|okra|poriyal|sabzi)/i.test(x)) return 'About 1 cup cooked vegetables or a generous bowl of salad (roughly 100–150 g), depending on preparation.';
+      if(/(dal|dhal|sambar|pappu|lentil|chana|chole|rajma|chickpea|sprout|beans curry)/i.test(x)) return 'About 1 small-to-medium bowl, 150–200 ml; choose this as a protein/legume accompaniment.';
+      if(/(paneer|tofu)/i.test(x)) return 'A modest serving, around 75–100 g, alongside vegetables and a grain; actual needs vary.';
+      if(/(chicken|fish|prawn|shrimp|mutton|meat|seafood)/i.test(x)) return 'A typical adult meal portion is around 100–120 g cooked, if this suits your dietary preference and health needs; prefer grilled, steamed or less-oily preparations when available.';
+      if(/(egg|omelet|omelette|omlet)/i.test(x)) return 'Usually 1–2 eggs as one protein option, considering the rest of the meal and your personal health advice.';
+      if(/(curd|yogurt|buttermilk|milk)/i.test(x)) return 'About 1 small glass/bowl (150–200 ml), if tolerated and consistent with your dietary needs.';
+      if(/(rice|pulao|biryani|khichdi|pongal)/i.test(x)) return meal==='lunch'||meal==='dinner' ? 'Start with about 1 cup cooked (roughly 150–180 g); adjust to hunger and activity, and pair with vegetables plus dal/another protein.' : 'Start with about 1 medium bowl; pair with a protein-rich accompaniment if listed.';
+      if(/(roti|chapati|chapathi|pulk|phulka|bread|paratha|poori|puri|dosa|idli|upma|poha|sevai|noodle|pasta|oats|daliya|millet)/i.test(x)) return /poori|puri|paratha|fried|bhature/i.test(x) ? 'Start with one standard serving; this item may be oil-rich, so avoid stacking several fried options in the same meal.' : 'Start with 1–2 medium pieces or one medium bowl, depending on the dish; pair with dal, sprouts, curd, egg or another protein if listed.';
+      if(/(juice|sweet|cake|payasam|custard|dessert|laddu|gulab jamun|ice cream|sugar)/i.test(x)) return 'Optional small serving; keep sweetened foods/drinks occasional and limit free sugars across the day.';
+      if(/(chips|pakoda|bajji|bhajji|samosa|puff|fryums|manchuria|vada)/i.test(x)) return 'If choosing this, keep to one small serving and balance it with a less-fried option; these foods can add substantial oil or salt.';
+      return meal==='snacks' ? 'Choose one small serving at a time; prefer a fruit, nuts/legumes or another less-sugary, less-salty option when available.' : 'Take one standard mess serving and combine it with a listed vegetable and protein/legume option where available.';
     };
+    const dailyPrinciples=()=>'<div class="menu-nutrition-targets"><strong>Daily balance check (general adult guidance)</strong><ul><li>Work towards at least <b>400 g fruit and vegetables</b> across the day.</li><li>Include whole grains and pulses/other protein sources for variety and fibre.</li><li>WHO advises adults to keep salt below <b>5 g/day</b> and free sugars below <b>10% of daily energy</b> (ideally below 5%). These totals include food prepared outside this one meal.</li></ul><span class="muted small-copy">Reference: WHO Healthy Diet (updated 26 Jan 2026). Quantities shown for individual dishes are practical starting portions, not exact nutrient calculations.</span></div>';
     if(structured){
       const raw=structured[mealKey]||[],available=filterMenuItems(raw,messType,dt.getDate());
       const rec=mealRecommendations(raw,messType,dt.getDate()),priority=[...new Set([...rec.vegetables,...rec.proteins,...rec.grains])].filter(x=>!rec.moderate.includes(x)).slice(0,3);
       const list=available.length?`<ol class="menu-item-order">${available.map(item=>`<li>${esc(item)}</li>`).join('')}</ol>`:'<p class="muted">No items for this meal match the selected mess type on this date. Check the original menu or choose another mess type.</p>';
-      const recText=priority.length?`Prioritize ${priority.map(esc).join(', ')} where available.`:'Choose a balanced combination from the listed items; no specific dish could be confidently classified as a priority.';
+      const recText=priority.length?`For this ${mealTitle.toLowerCase()}, prioritize ${priority.join(', ')} from today's actual menu. The portions below change with the dishes listed for ${date}.`:'Use the actual dishes listed below to build a balanced meal; the app could not confidently classify some items, so portion notes are conservative.';
       const typeLabel=messType==='special-veg'?'Special mess · Vegetarian':messType==='special-nonveg'?'Special mess · Non-vegetarian':messType==='nonveg'?'Regular mess · Non-vegetarian':'Regular mess · Vegetarian';
       const sleep=state.days[date]?.sleep||{},sleepMins=duration(sleep.bedtime,sleep.wake),context=sleepMins!==null&&sleepMins<420?'<p class="muted small-copy">Your recorded sleep was below the general adult 7-hour reference. Food cannot replace sleep.</p>':'';
-      $('menu-suggestions').innerHTML=`<div class="menu-day-line"><strong>${weekday}, ${date}</strong><span>${esc(typeLabel)}</span></div><section class="menu-meal-card"><div class="menu-meal-heading"><span class="menu-step">1</span><div><h3>${mealTitle} menu</h3><p>Items are shown separately and in menu order.</p></div></div>${list}</section><section class="menu-recommendation-card"><div class="menu-meal-heading"><span class="menu-step">2</span><div><h3>Your suggestion</h3><p>${esc(recText)}</p></div></div><p><strong>Suggested intake:</strong> ${esc(portionFor(mealKey))}</p><p class="muted small-copy">These are general starting portions, not a medical prescription. Adjust for appetite, activity, allergies and clinician advice.</p></section>${context}<p class="muted small-copy menu-source-links">Guidance: <a href="https://www.who.int/en/news-room/fact-sheets/detail/healthy-diet" target="_blank" rel="noopener noreferrer">WHO Healthy Diet</a> · <a href="https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf" target="_blank" rel="noopener noreferrer">ICMR-NIN Dietary Guidelines for Indians 2024</a>.</p>`;
+      const portionRows=available.length?`<div class="menu-portion-list"><h4>Suggested quantities for today's dishes</h4><ul>${available.map(item=>`<li><strong>${esc(item)}</strong><span>${esc(portionForItem(item,mealKey))}</span></li>`).join('')}</ul></div>`:'<p class="muted">No menu items are available to calculate dish-specific suggestions for this meal.</p>';
+      $('menu-suggestions').innerHTML=`<div class="menu-day-line"><strong>${weekday}, ${date}</strong><span>${esc(typeLabel)}</span></div><section class="menu-meal-card"><div class="menu-meal-heading"><span class="menu-step">1</span><div><h3>${mealTitle} menu</h3><p>These are the dishes parsed from the menu for the selected date.</p></div></div>${list}</section><section class="menu-recommendation-card"><div class="menu-meal-heading"><span class="menu-step">2</span><div><h3>Menu-based intake suggestion</h3><p>${esc(recText)}</p></div></div>${portionRows}<p class="muted small-copy">Choose a combination rather than eating every listed dish in full portions. Start with your usual serving, eat to comfortable fullness, and adjust for appetite, activity, allergies, dietary preference and clinician advice.</p></section>${dailyPrinciples()}${context}<p class="muted small-copy menu-source-links">Evidence basis: <a href="https://www.who.int/news-room/fact-sheets/detail/healthy-diet" target="_blank" rel="noopener noreferrer">WHO Healthy Diet</a> · <a href="https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf" target="_blank" rel="noopener noreferrer">ICMR-NIN Dietary Guidelines for Indians 2024</a>.</p>`;
       return;
     }
     $('menu-suggestions').innerHTML=`<div class="menu-advice"><strong>${weekday}, ${date}</strong><p><b>Daily meal mapping unavailable.</b> This upload does not contain a reliable date-to-meal table. SARATHI will not label undated items as today's menu. Upload the original XLSX with Day, Breakfast, Lunch, Snacks and Dinner columns, then save it.</p><details><summary>Review extracted menu text</summary><pre class="menu-extracted-text">${esc((m.text||'').slice(0,12000))}</pre></details><p class="muted small-copy">General guidance: <a href="https://www.who.int/en/news-room/fact-sheets/detail/healthy-diet" target="_blank" rel="noopener noreferrer">WHO Healthy Diet</a> · <a href="https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf" target="_blank" rel="noopener noreferrer">ICMR-NIN 2024</a>.</p></div>`;
@@ -750,9 +765,11 @@
   // Sanskrit corpus as fallback. Telugu meaning is taken from source data when
   // present; otherwise it is translated and cached, with that status disclosed.
   const GITA_CORPUS_URLS = [
-    "https://gitabhawan.org.in/data/gita-corpus.json",
-    "https://cdn.jsdelivr.net/gh/AdiyogiArts/gita-json@main/base.json"
+    "assets/data/gita-corpus.json",
+    "https://cdn.jsdelivr.net/gh/AdiyogiArts/gita-json@main/base.json",
+    "https://gitabhawan.org.in/data/gita-corpus.json"
   ];
+  // Prefer the bundled local corpus so daily verses work without third-party APIs.
   const GITA_CACHE_KEY = "sarathi.gita.corpus.v1";
   const GITA_EPOCH = "2026-10-19"; // Day 1 = 1.1; then 1.2, 1.3 ... 18.78.
   const GITA_CHAPTER_VERSE_COUNTS = [47,72,43,42,29,47,30,28,34,42,55,20,34,27,20,24,28,78];
@@ -1014,11 +1031,16 @@
     $("gita-loading").hidden = true;
     $("gita-content").hidden = true;
     $("gita-fallback").hidden = false;
+    const fallback = $("gita-fallback");
+    if (fallback) {
+      fallback.querySelector(".gita-sanskrit")?.remove();
+      fallback.querySelector(".gita-telugu-script")?.remove();
+    }
     const fallbackRef = $("gita-fallback").querySelector(".gita-ref");
-    if (fallbackRef) fallbackRef.textContent = "Offline · 2.47 sample";
+    if (fallbackRef) fallbackRef.textContent = "శ్లోకం అందుబాటులో లేదు";
     const fallbackMeaning = $("gita-fallback").querySelector("#gita-fallback-bhavam");
     if (fallbackMeaning) fallbackMeaning.textContent =
-      "శ్లోకాల పూర్తి క్రమాన్ని లోడ్ చేయలేకపోయాం. ఇంటర్నెట్ కనెక్షన్ తిరిగి వచ్చినప్పుడు పేజీని రిఫ్రెష్ చేయండి; ఈ నమూనా శ్లోకం రోజువారీ క్రమంలో ఉన్నదిగా చూపబడటం లేదు.";
+      "రోజువారీ శ్లోకాల డేటా లోడ్ కాలేదు. GitHub Pages లో assets/data/gita-corpus.json ఫైల్ ఉందో చూడండి; తర్వాత పేజీని రిఫ్రెష్ చేయండి.";
     $("gita-source").href = "https://gitabhawan.org.in/gita/research";
     $("gita-source").textContent = "మూల శ్లోకాల డేటా";
   }
