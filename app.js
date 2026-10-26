@@ -761,9 +761,8 @@
   $('focus-end').addEventListener('click',()=>finishFocus(false));focusDraw();
 
   // Daily Gita: use a validated 700-verse corpus in exact chapter/verse order.
-  // Sanskrit text is sourced from Gita Bhawan's public corpus, with a secondary
-  // Sanskrit corpus as fallback. Telugu meaning is taken from source data when
-  // present; otherwise it is translated and cached, with that status disclosed.
+  // Sanskrit text is sourced from the bundled public corpus, with secondary
+  // sources as fallback. English meanings are loaded from the matching en.json dataset.
   const GITA_CORPUS_URLS = [
     "assets/data/gita-corpus.json",
     "https://cdn.jsdelivr.net/gh/AdiyogiArts/gita-json@main/base.json",
@@ -889,7 +888,7 @@
     try { localStorage.setItem(GITA_TELUGU_CACHE_KEY, JSON.stringify(cache)); } catch (_) {}
   }
   function setGitaMeaningLabel(text) {
-    const label = $("gita-bhavam-label");
+    const label = document.querySelector(".gita-bhavam-label");
     if (label) label.textContent = text;
   }
   function decodeTranslationText(value) {
@@ -956,8 +955,8 @@
     const teluguScript = suppliedTeluguScript || devanagariToTelugu(verse.sanskrit || "");
     const teluguScriptNode = $("gita-telugu-script");
     if (teluguScriptNode) {
-      teluguScriptNode.textContent = teluguScript;
-      teluguScriptNode.hidden = !teluguScript;
+      teluguScriptNode.textContent = "";
+      teluguScriptNode.hidden = true;
     }
 
     const key = `${verse.chapter}.${verse.verse}`;
