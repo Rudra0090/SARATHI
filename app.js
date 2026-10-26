@@ -769,10 +769,12 @@
     "https://cdn.jsdelivr.net/gh/AdiyogiArts/gita-json@main/base.json",
     "https://gitabhawan.org.in/data/gita-corpus.json"
   ];
-  const GITA_ENGLISH_URL =
-  "https://cdn.jsdelivr.net/gh/AdiyogiArts/gita-json@main/en.json";
   // Prefer the bundled local corpus so daily verses work without third-party APIs.
   const GITA_CACHE_KEY = "sarathi.gita.corpus.v1";
+  const GITA_ENGLISH_URLS = [
+    "https://cdn.jsdelivr.net/gh/AdiyogiArts/gita-json@main/en.json",
+    "https://raw.githubusercontent.com/AdiyogiArts/gita-json/main/en.json"
+  ];
   const GITA_EPOCH = "2026-10-19"; // Day 1 = 1.1; then 1.2, 1.3 ... 18.78.
   const GITA_CHAPTER_VERSE_COUNTS = [47,72,43,42,29,47,30,28,34,42,55,20,34,27,20,24,28,78];
 
@@ -834,20 +836,7 @@
     }
     return verses;
   }
-async function loadEnglishGitaMeanings() {
-  const response = await fetch(GITA_ENGLISH_URL, {
-    mode: "cors",
-    cache: "no-cache"
-  });
 
-  if (!response.ok) {
-    throw new Error("Unable to load English Gita meanings");
-  }
-
-  const data = await response.json();
-
-  return data;
-}
   function localDayNumber(dateKey) {
     const parts = String(dateKey).split("-").map(Number);
     const epochParts = GITA_EPOCH.split("-").map(Number);
@@ -966,40 +955,27 @@ async function loadEnglishGitaMeanings() {
       verse.transliteration?.telugu || verse.translations?.telugu_script || "";
     const teluguScript = suppliedTeluguScript || devanagariToTelugu(verse.sanskrit || "");
     const teluguScriptNode = $("gita-telugu-script");
-    
-const englishText = String(
-  verse.english ||
-  verse.translation_english ||
-  verse.translations?.english ||
-  verse.translations?.en ||
-  ""
-).trim();
+    if (teluguScriptNode) {
+      teluguScriptNode.textContent = teluguScript;
+      teluguScriptNode.hidden = !teluguScript;
+    }
 
-if (englishText) {
-  setGitaMeaningLabel("English Bhavam");
-  node.textContent = englishText;
-} else {
-  setGitaMeaningLabel("English Bhavam");
-  node.textContent = "English meaning is not available for this verse.";
-}
     const key = `${verse.chapter}.${verse.verse}`;
     $("gita-ref").textContent = `భగవద్గీత ${key}`;
     const node = $("gita-bhavam");
     node.dataset.verseKey = key;
 
-    const directTelugu = verse.telugu || verse.translation_telugu ||
-      verse.translations?.telugu || verse.translations?.te ||
-      verse.translation?.telugu || verse.translations?.Telugu || "";
-    const teluguText = typeof directTelugu === "string"
-      ? directTelugu
-      : (directTelugu?.text || directTelugu?.translation || directTelugu?.meaning || "");
+    const englishText = String(
+      verse.english ||
+      verse.translation_english ||
+      verse.translations?.english ||
+      verse.translations?.en ||
+      ""
+    ).trim();
 
-    if (teluguText.trim()) {
-      setGitaMeaningLabel("తెలుగు భావం");
-      node.textContent = teluguText.trim();
-    } else {
-      void translateGitaMeaning(verse);
-    }
+    setGitaMeaningLabel("భావం");
+    node.textContent = englishText ||
+      "English meaning is currently unavailable. Please check your internet connection and refresh.";
 
     $("gita-source").href = verse.url ||
       `https://www.gitasupersite.iitk.ac.in/srimad?choose=1&etgb=1&field_chapter_value=${verse.chapter}&field_nsutra_value=${verse.verse}&language=dv&setgb=1`;
@@ -1020,6 +996,34 @@ if (englishText) {
   function cacheGitaCorpus(data) {
     try { localStorage.setItem(GITA_CACHE_KEY, JSON.stringify(data)); }
     catch (error) { console.warn("Could not cache Gita corpus in this browser.", error); }
+  }
+
+  let gitaEnglishDataset = null;
+
+  async function loadEnglishGitaDataset() {
+    if (gitaEnglishDataset) return gitaEnglishDataset;
+
+    let lastError = null;
+    for (const url of GITA_ENGLISH_URLS) {
+      try {
+        const response = await fetch(url, {
+          mode: "cors",
+          cache: "no-cache",
+          signal: AbortSignal.timeout(10000)
+        });
+        if (!response.ok) throw new Error(`English Gita source returned HTTP ${response.status}`);
+        const data = await response.json();
+        if (!data || typeof data !== "object" || !data["1-1"]?.translation) {
+          throw new Error("English Gita source has an unexpected format");
+        }
+        gitaEnglishDataset = data;
+        return data;
+      } catch (error) {
+        lastError = error;
+        console.warn("Could not load English Gita meanings from source; trying fallback.", url, error);
+      }
+    }
+    throw lastError || new Error("English Gita meanings are unavailable");
   }
 
   async function loadDailyGita() {
@@ -1048,26 +1052,24 @@ if (englishText) {
     }
 
     if (verses && verses.length === 700) {
-  try {
-    const englishData = await loadEnglishGitaMeanings();
+      try {
+        const englishData = await loadEnglishGitaDataset();
+        verses = verses.map(verse => {
+          const key = `${verse.chapter}-${verse.verse}`;
+          const entry = englishData[key];
+          return {
+            ...verse,
+            english: String(entry?.translation || "").trim()
+          };
+        });
+      } catch (error) {
+        console.warn("English Gita meanings could not be loaded; Sanskrit verse will still display.", error);
+      }
 
-    verses = verses.map(verse => {
-      const key = `${verse.chapter}-${verse.verse}`;
-      const englishEntry = englishData[key];
-
-      return {
-        ...verse,
-        english: englishEntry?.translation || ""
-      };
-    });
-  } catch (error) {
-    console.warn("English Gita meanings could not be loaded.", error);
-  }
-
-  const dayIndex = localDayNumber(localKey(new Date()));
-  renderGitaVerse(verses[dayIndex % 700]);
-  return;
-}
+      const dayIndex = localDayNumber(localKey(new Date()));
+      renderGitaVerse(verses[dayIndex % 700]);
+      return;
+    }
 
     console.error("Daily Gita could not load a complete corpus.", lastError);
     $("gita-loading").hidden = true;
