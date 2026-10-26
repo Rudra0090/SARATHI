@@ -769,6 +769,8 @@
     "https://cdn.jsdelivr.net/gh/AdiyogiArts/gita-json@main/base.json",
     "https://gitabhawan.org.in/data/gita-corpus.json"
   ];
+  const GITA_ENGLISH_URL =
+  "https://cdn.jsdelivr.net/gh/AdiyogiArts/gita-json@main/en.json";
   // Prefer the bundled local corpus so daily verses work without third-party APIs.
   const GITA_CACHE_KEY = "sarathi.gita.corpus.v1";
   const GITA_EPOCH = "2026-10-19"; // Day 1 = 1.1; then 1.2, 1.3 ... 18.78.
@@ -832,7 +834,20 @@
     }
     return verses;
   }
+async function loadEnglishGitaMeanings() {
+  const response = await fetch(GITA_ENGLISH_URL, {
+    mode: "cors",
+    cache: "no-cache"
+  });
 
+  if (!response.ok) {
+    throw new Error("Unable to load English Gita meanings");
+  }
+
+  const data = await response.json();
+
+  return data;
+}
   function localDayNumber(dateKey) {
     const parts = String(dateKey).split("-").map(Number);
     const epochParts = GITA_EPOCH.split("-").map(Number);
@@ -951,11 +966,22 @@
       verse.transliteration?.telugu || verse.translations?.telugu_script || "";
     const teluguScript = suppliedTeluguScript || devanagariToTelugu(verse.sanskrit || "");
     const teluguScriptNode = $("gita-telugu-script");
-    if (teluguScriptNode) {
-      teluguScriptNode.textContent = teluguScript;
-      teluguScriptNode.hidden = !teluguScript;
-    }
+    
+const englishText = String(
+  verse.english ||
+  verse.translation_english ||
+  verse.translations?.english ||
+  verse.translations?.en ||
+  ""
+).trim();
 
+if (englishText) {
+  setGitaMeaningLabel("English Bhavam");
+  node.textContent = englishText;
+} else {
+  setGitaMeaningLabel("English Bhavam");
+  node.textContent = "English meaning is not available for this verse.";
+}
     const key = `${verse.chapter}.${verse.verse}`;
     $("gita-ref").textContent = `భగవద్గీత ${key}`;
     const node = $("gita-bhavam");
@@ -1022,10 +1048,26 @@
     }
 
     if (verses && verses.length === 700) {
-      const dayIndex = localDayNumber(localKey(new Date()));
-      renderGitaVerse(verses[dayIndex % 700]);
-      return;
-    }
+  try {
+    const englishData = await loadEnglishGitaMeanings();
+
+    verses = verses.map(verse => {
+      const key = `${verse.chapter}-${verse.verse}`;
+      const englishEntry = englishData[key];
+
+      return {
+        ...verse,
+        english: englishEntry?.translation || ""
+      };
+    });
+  } catch (error) {
+    console.warn("English Gita meanings could not be loaded.", error);
+  }
+
+  const dayIndex = localDayNumber(localKey(new Date()));
+  renderGitaVerse(verses[dayIndex % 700]);
+  return;
+}
 
     console.error("Daily Gita could not load a complete corpus.", lastError);
     $("gita-loading").hidden = true;
